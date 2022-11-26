@@ -58,10 +58,12 @@ end
 
 module Enumerators
     class Simple
-        @@_id = 0
+        @@_n = 0
+
+        public
 
         def call
-            @@_id += 1
+            @@_n += 1
         end
     end
 end
@@ -156,7 +158,7 @@ module UseCases
         def call
             @tasks_repository.list.each do |task|
                 output = @task_printer.call(task)
-                
+
                 puts output
             end
         end
@@ -231,96 +233,104 @@ module UseCases
 end
 
 
-container = Dry::Container.new
+module Container
+    def self.build
+        container = Dry::Container.new
 
-container.namespace('todo') do
-    register(:simple_enumerator, memoize: true) do
-        Enumerators::Simple.new
-    end
+        container.namespace('todo') do
+            register(:simple_enumerator, memoize: true) do
+                Enumerators::Simple.new
+            end
 
-    register(:task_factory, memoize: true) do
-        Factories::Task.new(
-            enumerator: resolve(:simple_enumerator),
-        )
-    end
+            register(:task_factory, memoize: true) do
+                Factories::Task.new(
+                    enumerator: resolve(:simple_enumerator),
+                )
+            end
 
-    register(:tasks_repository, memoize: true) do
-        Repositories::Tasks.new
-    end
+            register(:tasks_repository, memoize: true) do
+                Repositories::Tasks.new
+            end
 
-    register(:plain_printer, memoize: true) do
-        TaskPrinters::Plain.new
-    end
+            register(:plain_printer, memoize: true) do
+                TaskPrinters::Plain.new
+            end
 
-    register(:csv_printer, memoize: true) do
-        TaskPrinters::Csv.new
-    end
+            register(:csv_printer, memoize: true) do
+                TaskPrinters::Csv.new
+            end
 
-    register(:print_tasks) do
-        UseCases::PrintTasks.new(
-            tasks_repository: resolve(:tasks_repository),
-            task_printer: resolve(:plain_printer),
-        )
-    end
+            register(:print_tasks) do
+                UseCases::PrintTasks.new(
+                    tasks_repository: resolve(:tasks_repository),
+                    task_printer: resolve(:plain_printer),
+                )
+            end
 
-    register(:add_task) do
-        UseCases::AddTask.new(
-            tasks_repository: resolve(:tasks_repository),
-            task_factory: resolve(:task_factory),
-        )
-    end
+            register(:add_task) do
+                UseCases::AddTask.new(
+                    tasks_repository: resolve(:tasks_repository),
+                    task_factory: resolve(:task_factory),
+                )
+            end
 
-    register(:remove_task) do
-        UseCases::RemoveTask.new(
-            tasks_repository: resolve(:tasks_repository),
-        )
-    end
+            register(:remove_task) do
+                UseCases::RemoveTask.new(
+                    tasks_repository: resolve(:tasks_repository),
+                )
+            end
 
-    register(:edit_task) do
-        UseCases::EditTask.new(
-            tasks_repository: resolve(:tasks_repository),
-        )
-    end
+            register(:edit_task) do
+                UseCases::EditTask.new(
+                    tasks_repository: resolve(:tasks_repository),
+                )
+            end
 
-    register(:up_task) do
-        UseCases::UpTask.new(
-            tasks_repository: resolve(:tasks_repository),
-        )
-    end
+            register(:up_task) do
+                UseCases::UpTask.new(
+                    tasks_repository: resolve(:tasks_repository),
+                )
+            end
 
-    register(:down_task) do
-        UseCases::DownTask.new(
-            tasks_repository: resolve(:tasks_repository),
-        )
+            register(:down_task) do
+                UseCases::DownTask.new(
+                    tasks_repository: resolve(:tasks_repository),
+                )
+            end
+        end
     end
 end
 
 
-add_task = container.resolve('todo.add_task')
-print_tasks = container.resolve('todo.print_tasks')
-remove_task = container.resolve('todo.remove_task')
-edit_task = container.resolve('todo.edit_task')
-up_task = container.resolve('todo.up_task')
-down_task = container.resolve('todo.down_task')
+if __FILE__ == $0
+    container = Container.build
 
-puts 'Create 2 tasks:'
+    add_task = container.resolve('todo.add_task')
+    print_tasks = container.resolve('todo.print_tasks')
+    remove_task = container.resolve('todo.remove_task')
+    edit_task = container.resolve('todo.edit_task')
+    up_task = container.resolve('todo.up_task')
+    down_task = container.resolve('todo.down_task')
 
-add_task.call('A task example!')
-add_task.call('Another task!')
-up_task.call(task_id: 1)
-print_tasks.call
+    puts 'Create 2 tasks:'
 
-puts 'Edit task:'
+    add_task.call('A task example!')
+    add_task.call('Another task!')
+    up_task.call(task_id: 1)
+    print_tasks.call
 
-edit_task.call(task_id: 1, text: 'Text updated!')
-print_tasks.call
+    puts 'Edit task:'
 
-puts 'Increase priority:'
+    edit_task.call(task_id: 1, text: 'Text updated!')
+    print_tasks.call
 
-up_task.call(task_id: 2)
-print_tasks.call
+    puts 'Increase priority:'
 
-puts 'Removing a task:'
+    up_task.call(task_id: 2)
+    print_tasks.call
 
-remove_task.call(1)
-print_tasks.call
+    puts 'Removing a task:'
+
+    remove_task.call(1)
+    print_tasks.call
+end
