@@ -58,12 +58,14 @@ end
 
 module Enumerators
     class Simple
-        @@_n = 0
+        def initialize(initial:)
+            @n = initial
+        end
 
         public
 
         def call
-            @@_n += 1
+            @n += 1
         end
     end
 end
@@ -239,7 +241,9 @@ module Container
 
         container.namespace('todo') do
             register(:simple_enumerator, memoize: true) do
-                Enumerators::Simple.new
+                Enumerators::Simple.new(
+                    initial: 0
+                )
             end
 
             register(:task_factory, memoize: true) do

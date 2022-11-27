@@ -5,11 +5,13 @@ require './main'
 
 
 RSpec.describe Enumerators::Simple do
-    before(:each) { described_class.class_variable_set(:@@_n, 0) }
+    let(:initial) { 0 }
+
+    subject { described_class.new(initial: initial) }
 
     it 'increases value by 1' do
-        expect(subject.call).to eq(1)
-        expect(subject.call).to eq(2)
+        expect(subject.call).to eq(initial + 1)
+        expect(subject.call).to eq(initial + 2)
     end
 end
 
